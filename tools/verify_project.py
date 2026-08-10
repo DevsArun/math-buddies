@@ -84,6 +84,31 @@ def check_balance(path):
         print("OK balance:", path)
 
 
+def check_const_indexing(path):
+    """Regression guard (CI failure 1.1.0): a const declaration must never
+    contain index access like foo[0] - indexing is never a const expression,
+    so the Dart analyzer fails with const_with_non_constant_argument."""
+    full = os.path.join(ROOT, path)
+    with open(full, "r", encoding="utf-8") as f:
+        lines = strip_comments_and_strings(f.read()).splitlines()
+    in_const = False
+    for i, line in enumerate(lines, 1):
+        hit = re.search(r"[\w\.\]]+\[\d+\]", line)
+        if not in_const:
+            if re.search(r"\bconst\b[^;]*=", line):
+                if hit:
+                    fail(f"{path}:{i} const declaration uses index access (not constant)")
+                if ";" not in line:
+                    in_const = True
+        else:
+            if hit:
+                fail(f"{path}:{i} const declaration uses index access (not constant)")
+            if ";" in line:
+                in_const = False
+    if not FAILURES:
+        print("OK const-index:", path)
+
+
 def check_xml(path):
     full = os.path.join(ROOT, path)
     try:
@@ -111,6 +136,8 @@ def main():
             rel = os.path.relpath(os.path.join(dirpath, fn), ROOT)
             if fn.endswith((".dart", ".kt", ".kts")):
                 check_balance(rel)
+            if fn.endswith(".dart"):
+                check_const_indexing(rel)
             if fn.endswith(".xml"):
                 check_xml(rel)
 

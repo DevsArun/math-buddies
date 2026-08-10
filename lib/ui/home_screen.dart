@@ -25,7 +25,7 @@ class GameInfo {
   const GameInfo(this.id, this.title, this.world, this.emoji, this.gradient);
 }
 
-const List<GameInfo> kGames = <GameInfo>[
+final List<GameInfo> kGames = <GameInfo>[
   GameInfo('counting', 'Counting', 'Farm World', '🍎', AppColors.gameGradients[0]),
   GameInfo('tracing', 'Trace Numbers', 'Space Station', '✏️', AppColors.gameGradients[1]),
   GameInfo('jodtod', 'Add & Take Away', 'Ocean Bay', '➕', AppColors.gameGradients[2]),
