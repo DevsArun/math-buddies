@@ -1,0 +1,20 @@
+# Android shell is GENERATED in CI (rule B) - never commit it
+/android/
+
+# Signing - NEVER commit (lives only in GitHub Secrets + your private signing kit)
+*.jks
+*.keystore
+key.properties
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
