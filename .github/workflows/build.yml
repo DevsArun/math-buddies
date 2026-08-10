@@ -1,0 +1,93 @@
+name: Build Math Buddies APKs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.35.7"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: "Generate Android shell (rule B - throwaway dir, copy only android/)"
+        run: |
+          set -e
+          flutter create --org com.itschool --project-name math_buddies .ci_tmp_shell
+          cp -r .ci_tmp_shell/android ./android
+          rm -rf .ci_tmp_shell
+
+      - name: Apply pinned Gradle/AGP/NDK settings (rules A, J5, J6, J7, J10)
+        run: bash scripts/apply_android_overrides.sh
+
+      - name: Decode release keystore from GitHub Secrets (rule C)
+        run: |
+          set -e
+          test -n "$SIGNING_KEYSTORE_BASE64" || { echo "::error::Secret SIGNING_KEYSTORE_BASE64 is missing!"; exit 1; }
+          test -n "$SIGNING_STORE_PASSWORD" || { echo "::error::Secret SIGNING_STORE_PASSWORD is missing!"; exit 1; }
+          test -n "$SIGNING_KEY_PASSWORD" || { echo "::error::Secret SIGNING_KEY_PASSWORD is missing!"; exit 1; }
+          test -n "$SIGNING_KEY_ALIAS" || { echo "::error::Secret SIGNING_KEY_ALIAS is missing!"; exit 1; }
+          mkdir -p android/app/keystore
+          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > android/app/keystore/mathbuddies-release.jks
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=keystore/mathbuddies-release.jks\n' \
+            "$SIGNING_STORE_PASSWORD" "$SIGNING_KEY_PASSWORD" "$SIGNING_KEY_ALIAS" \
+            > android/key.properties
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Static analysis (blocking, zero issues allowed - rule J3)
+        run: flutter analyze --no-fatal-infos
+
+      - name: Unit/widget tests (blocking)
+        run: flutter test
+
+      - name: Build debug APK (Appetize / local testing ONLY)
+        run: flutter build apk --debug
+
+      - name: Build signed release APK (Amazon upload - never pass --stacktrace, rule J4)
+        run: flutter build apk --release
+
+      - name: Verify release signature (rules C, J8)
+        run: bash scripts/verify_signature.sh
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+
+      - name: Upload AMAZON-UPLOAD-signed-release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMAZON-UPLOAD-signed-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Upload APPETIZE-ONLY-debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: APPETIZE-ONLY-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
