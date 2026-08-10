@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Applies our pinned Android settings to the freshly generated Flutter shell.
+# Rules applied: A (sdk/ndk pins), J5 (compileSdk 36), J6 (NDK pin),
+# J7 (KTS-safe key.properties wiring), J10 (append gradle.properties).
+set -euo pipefail
+
+ANDROID_DIR="android"
+OVERRIDES_DIR="android_overrides"
+
+test -d "$ANDROID_DIR" || { echo "::error::android/ not found - run flutter create first"; exit 1; }
+test -d "$OVERRIDES_DIR" || { echo "::error::android_overrides/ not found"; exit 1; }
+
+# 1) Copy our app-level overrides (KTS, MainActivity, icons, proguard).
+cp "$OVERRIDES_DIR/app/build.gradle.kts" "$ANDROID_DIR/app/build.gradle.kts"
+cp "$OVERRIDES_DIR/app/proguard-rules.pro" "$ANDROID_DIR/app/proguard-rules.pro"
+mkdir -p "$ANDROID_DIR/app/src/main/kotlin/com/itschool/mathbuddies"
+cp "$OVERRIDES_DIR/app/src/main/kotlin/com/itschool/mathbuddies/MainActivity.kt" \
+   "$ANDROID_DIR/app/src/main/kotlin/com/itschool/mathbuddies/MainActivity.kt"
+
+# 2) Copy adaptive icon resources (rocket).
+mkdir -p "$ANDROID_DIR/app/src/main/res/drawable"
+mkdir -p "$ANDROID_DIR/app/src/main/res/mipmap-anydpi-v26"
+mkdir -p "$ANDROID_DIR/app/src/main/res/values"
+cp "$OVERRIDES_DIR/app/src/main/res/drawable/ic_launcher_foreground.xml" \
+   "$ANDROID_DIR/app/src/main/res/drawable/ic_launcher_foreground.xml"
+cp "$OVERRIDES_DIR/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" \
+   "$ANDROID_DIR/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+cp "$OVERRIDES_DIR/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" \
+   "$ANDROID_DIR/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+cp "$OVERRIDES_DIR/app/src/main/res/values/colors.xml" \
+   "$ANDROID_DIR/app/src/main/res/values/colors.xml"
+
+# 2b) Copy synthesized audio (sound effects + music loop).
+mkdir -p "$ANDROID_DIR/app/src/main/res/raw"
+cp "$OVERRIDES_DIR/app/src/main/res/raw/"*.wav \
+   "$ANDROID_DIR/app/src/main/res/raw/"
+for f in pop click sparkle correct wrong star win jump place whoosh music_loop; do
+  test -f "$ANDROID_DIR/app/src/main/res/raw/$f.wav" || { echo "::error::missing raw/$f.wav"; exit 1; }
+done
+
+# 3) Remove generated mipmap PNGs (default Flutter icon) - adaptive XML replaces them.
+find "$ANDROID_DIR/app/src/main/res" -path '*mipmap-*' -name '*.png' -delete
+find "$ANDROID_DIR/app/src/main/res" -path '*mipmap-*' -name '*.webp' -delete || true
+
+# 4) AndroidManifest: ensure ZERO permissions + correct label (rule A).
+MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
+test -f "$MANIFEST" || { echo "::error::AndroidManifest.xml missing"; exit 1; }
+if grep -q "uses-permission" "$MANIFEST"; then
+  echo "::error::Manifest contains uses-permission - zero permissions required!"
+  exit 1
+fi
+sed -i 's/android:label="[^"]*"/android:label="Math Buddies"/' "$MANIFEST"
+
+# 5) settings.gradle.kts: pin AGP + Kotlin versions.
+SETTINGS="$ANDROID_DIR/settings.gradle.kts"
+if [ -f "$SETTINGS" ]; then
+  sed -i 's|id("com.android.application") version "[^"]*"|id("com.android.application") version "8.7.3"|' "$SETTINGS"
+  sed -i 's|id("org.jetbrains.kotlin.android") version "[^"]*"|id("org.jetbrains.kotlin.android") version "2.1.0"|' "$SETTINGS"
+fi
+
+# 6) gradle.properties: APPEND only (rule J10).
+GRADLE_PROPS="$ANDROID_DIR/gradle.properties"
+{
+  echo ""
+  echo "# --- Math Buddies CI overrides ---"
+  echo "org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:+HeapDumpOnOutOfMemoryError"
+  echo "android.useAndroidX=true"
+  echo "android.enableJetifier=false"
+} >> "$GRADLE_PROPS"
+
+echo "Android overrides applied OK."
