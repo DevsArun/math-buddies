@@ -243,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 16),
                     const Center(
                       child: Text(
-                        'Math Buddies v1.1.2',
+                        'Math Buddies v1.1.3',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.softGrey,

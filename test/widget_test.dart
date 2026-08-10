@@ -2,18 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:math_buddies/main.dart';
+import 'package:math_buddies/ui/onboarding.dart';
 import 'package:math_buddies/ui/widgets/game_widgets.dart';
 
 void main() {
-  testWidgets('App boots to onboarding with age choices',
-      (WidgetTester tester) async {
+  testWidgets('App builds and shows the splash', (WidgetTester tester) async {
     await tester.pumpWidget(const MathBuddiesApp());
-    // NOTE: never pumpAndSettle here - Buddy/FloatingStars repeat forever
-    // and pumpAndSettle would time out. Fixed pumps are the safe pattern.
-    await tester.pump(); // splash frame
-    await tester.pump(const Duration(milliseconds: 100)); // progress load
-    await tester.pump(); // onboarding shown
+    // First frame only: the splash is synchronous and needs no channels.
+    await tester.pump();
     expect(find.text('Math Buddies'), findsWidgets);
+    expect(find.text('🚀'), findsOneWidget);
+  });
+
+  testWidgets('Onboarding shows both age choices', (WidgetTester tester) async {
+    // Test the screen directly: no splash gate, no platform channels,
+    // no pumpAndSettle (Buddy/FloatingStars repeat forever and would
+    // never settle). Fully deterministic.
+    await tester.pumpWidget(const MaterialApp(home: OnboardingScreen()));
+    await tester.pump();
+    expect(find.text('Math Buddies'), findsOneWidget);
     expect(find.text('Ages 3-4'), findsOneWidget);
     expect(find.text('Ages 5-6'), findsOneWidget);
   });
