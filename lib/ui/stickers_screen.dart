@@ -7,7 +7,7 @@ import 'theme.dart';
 import 'widgets/effects.dart';
 import 'widgets/game_widgets.dart';
 
-/// Sticker Book (collection) + My Space Scene (decorate with earned stickers).
+/// Sticker Book (collection) + My Space Scene (decorate) + Trophies.
 class StickersScreen extends StatefulWidget {
   const StickersScreen({super.key});
 
@@ -16,20 +16,13 @@ class StickersScreen extends StatefulWidget {
 }
 
 class _StickersScreenState extends State<StickersScreen> {
-  bool _bookMode = true;
+  int _mode = 0; // 0 = book, 1 = scene, 2 = trophies
 
   @override
   Widget build(BuildContext context) {
     final ProgressStore store = ProgressStore.instance;
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: AppColors.bgGradient,
-          ),
-        ),
+      body: AnimatedGradientBg(
         child: SafeArea(
           child: Column(
             children: <Widget>[
@@ -37,7 +30,11 @@ class _StickersScreenState extends State<StickersScreen> {
               _modeSwitch(),
               const SizedBox(height: 8),
               Expanded(
-                child: _bookMode ? _buildBook(store) : _buildScene(store),
+                child: _mode == 0
+                    ? _buildBook(store)
+                    : _mode == 1
+                        ? _buildScene(store)
+                        : _buildTrophies(store),
               ),
             ],
           ),
@@ -70,7 +67,7 @@ class _StickersScreenState extends State<StickersScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              '🏅 ${store.stickers.length}/24',
+              '🏅 ${store.stickers.length}/${kStickers.length}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -84,17 +81,21 @@ class _StickersScreenState extends State<StickersScreen> {
   }
 
   Widget _modeSwitch() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
       children: <Widget>[
-        _modeButton('📖 Book', _bookMode, () {
+        _modeButton('📖 Book', _mode == 0, () {
           MediaService.play('click');
-          setState(() => _bookMode = true);
+          setState(() => _mode = 0);
         }),
-        const SizedBox(width: 12),
-        _modeButton('🌌 My Scene', !_bookMode, () {
+        _modeButton('🌌 My Scene', _mode == 1, () {
           MediaService.play('click');
-          setState(() => _bookMode = false);
+          setState(() => _mode = 1);
+        }),
+        _modeButton('🏆 Trophies', _mode == 2, () {
+          MediaService.play('click');
+          setState(() => _mode = 2);
         }),
       ],
     );
@@ -104,7 +105,7 @@ class _StickersScreenState extends State<StickersScreen> {
     return Pressable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: active ? const Color(0xFF7C5CFF) : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -119,7 +120,7 @@ class _StickersScreenState extends State<StickersScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.w900,
             color: active ? Colors.white : AppColors.ink,
           ),
@@ -168,11 +169,82 @@ class _StickersScreenState extends State<StickersScreen> {
     );
   }
 
+  // ---------------- trophies ----------------
+
+  Widget _buildTrophies(ProgressStore store) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 230,
+        childAspectRatio: 1.5,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+      ),
+      itemCount: kTrophies.length,
+      itemBuilder: (BuildContext context, int i) {
+        final TrophyDef t = kTrophies[i];
+        final bool earned = trophyEarned(t.id, store);
+        return PopIn(
+          delayMs: i * 60,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: earned ? Colors.white : const Color(0xFFEDEAF6),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: earned
+                    ? const Color(0xFFFAD961)
+                    : Colors.transparent,
+                width: 3,
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  earned ? t.emoji : '🔒',
+                  style: const TextStyle(fontSize: 38),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  t.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: earned ? AppColors.ink : AppColors.softGrey,
+                  ),
+                ),
+                Text(
+                  t.how,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.softGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // ---------------- my space scene ----------------
 
   Widget _buildScene(ProgressStore store) {
-    final List<String> earned =
-        store.stickers.where((String id) => kStickers.any((StickerDef d) => d.id == id)).toList();
+    final List<String> earned = store.stickers
+        .where((String id) => kStickers.any((StickerDef d) => d.id == id))
+        .toList();
     if (earned.isEmpty) {
       return const Center(
         child: Text(
@@ -295,8 +367,8 @@ class _StickersScreenState extends State<StickersScreen> {
                     ],
                   ),
                   child: Center(
-                    child:
-                        Text(stickerEmoji(id), style: const TextStyle(fontSize: 36)),
+                    child: Text(stickerEmoji(id),
+                        style: const TextStyle(fontSize: 36)),
                   ),
                 ),
               );

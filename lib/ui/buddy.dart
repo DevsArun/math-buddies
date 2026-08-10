@@ -8,8 +8,14 @@ enum BuddyMood { idle, happy, celebrate, encourage }
 class Buddy extends StatefulWidget {
   final BuddyMood mood;
   final double size;
+  final Color accent;
 
-  const Buddy({super.key, this.mood = BuddyMood.idle, this.size = 96});
+  const Buddy({
+    super.key,
+    this.mood = BuddyMood.idle,
+    this.size = 96,
+    this.accent = const Color(0xFF5B54E8),
+  });
 
   @override
   State<Buddy> createState() => _BuddyState();
@@ -72,6 +78,7 @@ class _BuddyState extends State<Buddy> with TickerProviderStateMixin {
                   eyesClosed: eyesClosed,
                   t: _bob.value,
                   party: _party.value,
+                  accent: widget.accent,
                 ),
               ),
             ),
@@ -87,9 +94,8 @@ class _BuddyPainter extends CustomPainter {
   final bool eyesClosed;
   final double t; // 0..1 bob cycle (flame flicker)
   final double party; // 0..1 celebration progress
+  final Color accent;
 
-  static const Color purple = Color(0xFF5B54E8);
-  static const Color windowBlue = Color(0xFF7C8CFF);
   static const Color yellow = Color(0xFFFFC53D);
   static const Color pink = Color(0xFFFF6A88);
 
@@ -98,6 +104,7 @@ class _BuddyPainter extends CustomPainter {
     required this.eyesClosed,
     required this.t,
     required this.party,
+    this.accent = const Color(0xFF5B54E8),
   });
 
   @override
@@ -159,8 +166,9 @@ class _BuddyPainter extends CustomPainter {
 
     // --- window with face ---
     final Offset winCenter = const Offset(50, 42);
-    canvas.drawCircle(winCenter, 15, Paint()..color = purple);
-    canvas.drawCircle(winCenter, 11.5, Paint()..color = windowBlue);
+    canvas.drawCircle(winCenter, 15, Paint()..color = accent);
+    canvas.drawCircle(
+        winCenter, 11.5, Paint()..color = accent.withValues(alpha: 0.55));
 
     final Paint facePaint = Paint()
       ..color = Colors.white

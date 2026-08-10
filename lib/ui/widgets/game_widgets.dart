@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/media.dart';
+import '../../data/progress_store.dart';
 import '../buddy.dart';
 import '../theme.dart';
 
@@ -235,7 +237,47 @@ class GameHeader extends StatelessWidget {
               ),
             ),
           ),
-          Buddy(mood: mood, size: 54),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                height: 34,
+                child: ValueListenableBuilder<String>(
+                  valueListenable: BuddyVoice.text,
+                  builder: (BuildContext context, String text, Widget? child) {
+                    if (text.isEmpty) return const SizedBox.shrink();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      constraints: const BoxConstraints(maxWidth: 170),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: const Color(0xFFDDD6FE), width: 2),
+                      ),
+                      child: Text(
+                        text,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Buddy(
+                mood: mood,
+                size: 54,
+                accent:
+                    AppColors.buddyAccents[ProgressStore.instance.buddyColor],
+              ),
+            ],
+          ),
           const SizedBox(width: 6),
           ProgressStars(total: total, done: done),
         ],
@@ -332,6 +374,29 @@ class _WiggleState extends State<Wiggle> with SingleTickerProviderStateMixin {
       },
     );
   }
+}
+
+/// Buttery page transition used across the whole app.
+PageRoute<T> fancyRoute<T>(Widget page) {
+  return PageRouteBuilder<T>(
+    transitionDuration: const Duration(milliseconds: 380),
+    reverseTransitionDuration: const Duration(milliseconds: 280),
+    pageBuilder: (BuildContext context, Animation<double> a,
+            Animation<double> b) =>
+        page,
+    transitionsBuilder: (BuildContext context, Animation<double> anim,
+        Animation<double> b, Widget child) {
+      final Animation<double> curve =
+          CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1.0).animate(curve),
+          child: child,
+        ),
+      );
+    },
+  );
 }
 
 /// Pop-in animation for tiles appearing.

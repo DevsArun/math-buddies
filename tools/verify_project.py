@@ -122,6 +122,23 @@ def check_test_pumps(path):
         print("OK pumps:", path)
 
 
+def check_pattern_codes():
+    """Regression guard (v1.1.3 crash): every pattern code in the Patterns
+    game must be exactly 6 chars (5 shown + 1 answer). A 4-char code makes
+    _build read index 5 -> RangeError -> game never loads."""
+    path = os.path.join(ROOT, "lib/games/patterns/patterns_game.dart")
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    codes = re.findall(r"'([A-Z]{2,})'", text)
+    bad = [c for c in codes if len(c) != 6]
+    if bad:
+        fail(f"patterns_game: codes must be exactly 6 chars, got {bad}")
+    elif not codes:
+        fail("patterns_game: no pattern codes found - file structure changed?")
+    else:
+        print(f"OK pattern-codes: {len(codes)} codes all length 6")
+
+
 def check_xml(path):
     full = os.path.join(ROOT, path)
     try:
@@ -155,6 +172,8 @@ def main():
                     check_test_pumps(rel)
             if fn.endswith(".xml"):
                 check_xml(rel)
+
+    check_pattern_codes()
 
     if FAILURES:
         print(f"\n{len(FAILURES)} CHECK(S) FAILED")

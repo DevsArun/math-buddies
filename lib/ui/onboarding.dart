@@ -8,9 +8,22 @@ import 'theme.dart';
 import 'widgets/effects.dart';
 import 'widgets/game_widgets.dart';
 
-/// First-launch screen: meet Buddy + pick age group (drives difficulty).
-class OnboardingScreen extends StatelessWidget {
+/// First-launch screen: meet Buddy, pick his color, pick age group.
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  int _color = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _color = ProgressStore.instance.buddyColor;
+  }
 
   Future<void> _pick(BuildContext context, String ageGroup) async {
     ProgressStore.instance.setAgeGroup(ageGroup);
@@ -19,9 +32,7 @@ class OnboardingScreen extends StatelessWidget {
     await MediaService.say("Let's play!");
     if (context.mounted) {
       await Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) => const HomeScreen(),
-        ),
+        fancyRoute<void>(const HomeScreen()),
       );
     }
   }
@@ -29,14 +40,7 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: AppColors.bgGradient,
-          ),
-        ),
+      body: AnimatedGradientBg(
         child: SafeArea(
           child: Stack(
             children: <Widget>[
@@ -47,7 +51,11 @@ class OnboardingScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const Buddy(mood: BuddyMood.happy, size: 130),
+                      Buddy(
+                        mood: BuddyMood.happy,
+                        size: 120,
+                        accent: AppColors.buddyAccents[_color],
+                      ),
                       const SizedBox(height: 8),
                       const Text(
                         'Math Buddies',
@@ -59,7 +67,7 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        "Hi! I'm Buddy! Pick your age\nto start the adventure 🚀",
+                        "Hi! I'm Buddy! Pick my color!",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
@@ -67,7 +75,51 @@ class OnboardingScreen extends StatelessWidget {
                           color: AppColors.softGrey,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List<Widget>.generate(3, (int i) {
+                          final bool selected = _color == i;
+                          return Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8),
+                            child: Pressable(
+                              onTap: () {
+                                setState(() => _color = i);
+                                ProgressStore.instance.setBuddyColor(i);
+                                MediaService.play('click');
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selected
+                                        ? AppColors.buddyAccents[i]
+                                        : Colors.transparent,
+                                    width: 4,
+                                  ),
+                                ),
+                                child: Buddy(
+                                  size: 56,
+                                  accent: AppColors.buddyAccents[i],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Pick your age to start the adventure 🚀',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.softGrey,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[

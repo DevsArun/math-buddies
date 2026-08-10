@@ -118,10 +118,10 @@ def shot_hero():
     d.text((830, 300), t, font=f, fill=INK)
     d.text((836, 480), "Playful math adventures for little learners!",
            font=font(56), fill=GREY)
-    d.text((836, 590), "6 worlds  •  Buddy talks  •  24 stickers",
+    d.text((836, 590), "8 worlds  •  Buddy talks  •  32 stickers",
            font=font(48), fill=PURPLE)
-    for i, e in enumerate(["🍎", "✏️", "➕", "🔷", "🎨", "⚖️"]):
-        paste_emoji(img, e, 260 + i * 240, 900, 120)
+    for i, e in enumerate(["🍎", "✏️", "➕", "🔷", "🎨", "⚖️", "🫧", "🃏"]):
+        paste_emoji(img, e, 140 + i * 235, 900, 110)
     stars_row(img, W / 2, 1060, 5, 5, 60)
     save(img, "01-hero.png")
 
@@ -268,6 +268,47 @@ def shot_stickers():
     save(img, "08-sticker-scene.png")
 
 
+def shot_bubbles():
+    img = base()
+    title_bar(img, "🫧", "Bubble Pop — Bubble Sky")
+    stars_row(img, W - 400, 100, 10, 4)
+    d = ImageDraw.Draw(img)
+    d.text((640, 205), "Pop from 1 to 8!  Next: 3", font=font(58), fill=GREY)
+    positions = [(420, 480), (760, 400), (1100, 470), (1440, 420),
+                 (560, 780), (940, 750), (1300, 800), (1600, 740)]
+    nums = [4, 1, 7, 2, 8, 3, 6, 5]
+    for (x, y), n in zip(positions, nums):
+        popped = n in (1, 2)
+        r = 34 if popped else 88
+        color = (200, 220, 255) if popped else (102, 166, 255)
+        d.ellipse([x - r, y - r, x + r, y + r], fill=color, outline=WHITE, width=6)
+        if not popped:
+            f = font(74)
+            t = str(n)
+            d.text((x - d.textlength(t, font=f) / 2, y - 42), t, font=f, fill=WHITE)
+    save(img, "09-bubbles.png")
+
+
+def shot_memory():
+    img = base()
+    title_bar(img, "🃏", "Memory Match — Memory Meadow")
+    stars_row(img, W - 400, 100, 6, 2)
+    d = ImageDraw.Draw(img)
+    cards = ["🦊", None, None, "🐼", None, "🦊", None, None, "🐼", None, None, None]
+    for i, e in enumerate(cards):
+        col = i % 4
+        row = i // 4
+        x = 400 + col * 300
+        y = 240 + row * 300
+        if e:
+            card(d, (x, y, x + 220, y + 220), 28)
+            paste_emoji(img, e, x + 110, y + 110, 120)
+        else:
+            card(d, (x, y, x + 220, y + 220), 28, fill=(240, 87, 108))
+            paste_emoji(img, "✨", x + 110, y + 110, 90)
+    save(img, "10-memory.png")
+
+
 def main():
     shot_hero()
     shot_map()
@@ -277,6 +318,8 @@ def main():
     shot_shapes()
     shot_patterns()
     shot_stickers()
+    shot_bubbles()
+    shot_memory()
     print("done ->", OUT)
 
 

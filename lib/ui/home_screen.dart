@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../data/media.dart';
 import '../data/progress_store.dart';
+import '../games/bubbles/bubbles_game.dart';
 import '../games/compare/compare_game.dart';
 import '../games/counting/counting_game.dart';
 import '../games/jodtod/jodtod_game.dart';
+import '../games/memory/memory_game.dart';
 import '../games/patterns/patterns_game.dart';
+import '../games/rewards.dart';
 import '../games/shapes/shapes_game.dart';
 import '../games/tracing/tracing_game.dart';
 import 'buddy.dart';
@@ -32,6 +35,8 @@ final List<GameInfo> kGames = <GameInfo>[
   GameInfo('shapes', 'Shapes', 'Shape Kingdom', '🔷', AppColors.gameGradients[3]),
   GameInfo('patterns', 'Patterns', 'Jungle Jam', '🎨', AppColors.gameGradients[4]),
   GameInfo('compare', 'Big & Small', 'Dino Valley', '⚖️', AppColors.gameGradients[5]),
+  GameInfo('bubbles', 'Bubble Pop', 'Bubble Sky', '🫧', AppColors.gameGradients[6]),
+  GameInfo('memory', 'Memory Match', 'Memory Meadow', '🃏', AppColors.gameGradients[7]),
 ];
 
 /// Adventure Map home: a winding path of planet-worlds, one per game.
@@ -52,27 +57,77 @@ class _HomeScreenState extends State<HomeScreen> {
       'shapes' => const ShapesGame(),
       'patterns' => const PatternsGame(),
       'compare' => const CompareGame(),
+      'bubbles' => const BubblesGame(),
+      'memory' => const MemoryGame(),
       _ => const CountingGame(),
     };
     if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (BuildContext context) => screen),
-    );
+    await Navigator.of(context).push(fancyRoute<void>(screen));
     setState(() {}); // refresh stars after returning
+  }
+
+  Future<void> _openChest() async {
+    final ProgressStore store = ProgressStore.instance;
+    if (!store.chestAvailable) {
+      await MediaService.say('Come back tomorrow for more treasure!');
+      return;
+    }
+    final int won = store.openChest();
+    await MediaService.play('chest');
+    await MediaService.say('Daily treasure! $won bonus stars!');
+    if (!mounted) return;
+    setState(() {});
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text('🎁', style: TextStyle(fontSize: 80)),
+              const SizedBox(height: 8),
+              Text(
+                '+$won ⭐',
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink,
+                ),
+              ),
+              const Text(
+                'Daily treasure! Come back tomorrow!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.softGrey,
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            Center(
+              child: BigButton(
+                label: 'Yay!',
+                emoji: '🎉',
+                colors: const <Color>[Color(0xFFFAD961), Color(0xFFF76B1C)],
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final ProgressStore store = ProgressStore.instance;
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: AppColors.bgGradient,
-          ),
-        ),
+      body: AnimatedGradientBg(
         child: SafeArea(
           child: Stack(
             children: <Widget>[
@@ -100,7 +155,11 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 16, 6),
       child: Row(
         children: <Widget>[
-          const Buddy(mood: BuddyMood.happy, size: 84),
+          Buddy(
+            mood: BuddyMood.happy,
+            size: 84,
+            accent: AppColors.buddyAccents[store.buddyColor],
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -123,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '⭐ ${store.totalStars}   🏅 ${store.stickers.length}/24',
+                    '⭐ ${store.totalStars}   🏅 ${store.stickers.length}/${kStickers.length}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -136,31 +195,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Column(
             children: <Widget>[
+              Pressable(
+                onTap: _openChest,
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: store.chestAvailable
+                        ? const Color(0xFFFFF3D6)
+                        : Colors.white.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: store.chestAvailable
+                            ? const Color(0xFFFAD961).withValues(alpha: 0.8)
+                            : Colors.black.withValues(alpha: 0.08),
+                        blurRadius: store.chestAvailable ? 14 : 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '🎁',
+                      style: TextStyle(
+                        fontSize: 26,
+                        color: store.chestAvailable ? null : Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               RoundIconButton(
                 emoji: '🎒',
                 onTap: () async {
                   await MediaService.play('jump');
                   if (!context.mounted) return;
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (BuildContext context) => const StickersScreen(),
-                    ),
-                  );
+                  await Navigator.of(context)
+                      .push(fancyRoute<void>(const StickersScreen()));
                   setState(() {});
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               RoundIconButton(
                 emoji: '⚙️',
                 onTap: () async {
                   final bool ok = await showParentalGate(context);
                   if (ok && context.mounted) {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (BuildContext context) =>
-                            const SettingsScreen(),
-                      ),
-                    );
+                    await Navigator.of(context)
+                        .push(fancyRoute<void>(const SettingsScreen()));
                     setState(() {});
                   }
                 },
@@ -181,8 +265,8 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            width: 108,
-            height: 108,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -200,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
               border: Border.all(color: Colors.white, width: 4),
             ),
             child: Center(
-              child: Text(game.emoji, style: const TextStyle(fontSize: 46)),
+              child: Text(game.emoji, style: const TextStyle(fontSize: 42)),
             ),
           ),
           if (stars > 0)
@@ -282,7 +366,7 @@ class _PathConnector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 38,
       width: double.infinity,
       child: CustomPaint(painter: _PathPainter(flip: flip)),
     );

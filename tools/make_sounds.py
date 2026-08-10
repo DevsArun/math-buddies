@@ -110,6 +110,16 @@ def main():
     ))
     # jump: rising sweep
     write_wav("jump", sweep(320, 760, 0.16, vol=0.4))
+    # flip: quick card swipe blip
+    write_wav("flip", sweep(480, 940, 0.09, vol=0.4))
+    # chest: rich treasure chime
+    write_wav("chest", mix(
+        (pluck(523, 0.35, 0.7, 0.45), 0),
+        (pluck(659, 0.35, 0.7, 0.45), sec(0.09)),
+        (pluck(784, 0.35, 0.7, 0.45), sec(0.18)),
+        (pluck(1047, 0.60, 0.7, 0.50), sec(0.28)),
+        (pluck(2093, 0.70, 0.8, 0.25), sec(0.36)),
+    ))
     # place: soft thock (drop a shape/sticker)
     write_wav("place", pluck(480, 0.10, bright=0.25, vol=0.5))
     # whoosh: filtered noise sweep

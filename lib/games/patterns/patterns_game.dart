@@ -45,8 +45,10 @@ class _PatternsGameState extends State<PatternsGame> {
     <String>['🍍', '🍌', '🍇'],
     <String>['🌺', '🌼', '🌻'],
   ];
+  // All codes MUST be exactly 6 chars (5 shown + 1 answer) - shorter codes
+  // crash _build with a RangeError (the v1.1.3 "Patterns won't load" bug).
   static const List<String> _codes2 = <String>[
-    'ABAB', 'AABB', 'ABBA', 'ABBB', 'AAAB',
+    'ABABAB', 'AABBAA', 'ABBAAB', 'ABBBAB', 'AAABAA',
   ];
   static const List<String> _codes3Easy = <String>[
     'ABCABC', 'AABBCC',

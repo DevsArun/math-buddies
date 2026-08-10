@@ -4,16 +4,20 @@
 Paid app ($4.99 one-time) for Amazon Fire tablets. No ads, no analytics, no login,
 no internet, no in-app purchases — buy once, everything unlocked forever.
 
-## What's inside (v1.1)
+## What's inside (v2.0)
 | Feature | Detail |
 |---|---|
-| 🎮 6 game worlds | Counting (Farm), Tracing (Space), Add & Take Away (Ocean), Shapes (Kingdom), Patterns (Jungle), Big & Small (Dino) |
-| 🔊 Buddy voice | Speaks instructions, counts along, praises — via on-device TTS |
-| 🎵 Audio | 11 synthesized sound effects + gentle music-box loop (all offline) |
-| 🧒 Adaptive difficulty | Ages 3–4 / 5–6 picked at first launch; games auto-tune |
-| 🗺️ Adventure Map | Winding path home screen, one planet per world |
-| 🏅 24 stickers | Earn per game tier + perfect-run bonuses; decorate **My Space Scene** |
-| 👨‍👩‍👧 Grown-ups dashboard | Parental gate, per-game progress bars, play time, skills report, sound/music/age controls, reset |
+| 🎮 8 game worlds | Counting, Tracing, Add & Take Away, Shapes, Patterns, Big & Small, **Bubble Pop**, **Memory Match** |
+| 🔊 Buddy voice + speech bubbles | Speaks instructions AND shows them in a bubble — via on-device TTS |
+| 🎵 Audio | 13 synthesized sound effects + gentle music-box loop (all offline) |
+| 🚀 Branded splash | Animated logo splash with Buddy |
+| 🎨 Buddy colors | Kids pick Buddy's rocket color (3 choices) |
+| 🎁 Daily treasure chest | +5 bonus stars once a day — kids come back daily |
+| 🏆 Trophies | 8 achievements (Star Champion, World Explorer, Perfectionist...) |
+| 🧒 Adaptive difficulty | Ages 3–4 / 5–6; tracing adds ONE–TEN words for big kids |
+| 🗺️ Adventure Map | Winding path home, animated gradient, buttery transitions |
+| 🏅 32 stickers | Earn per game tier + perfect-run bonuses; decorate **My Space Scene** |
+| 👨‍👩‍👧 Grown-ups dashboard | Parental gate, per-game progress, play time, skills report, controls, reset |
 
 ## How the build works (you never install anything)
 1. Push this repo to GitHub (PRIVATE).
@@ -32,5 +36,5 @@ no internet, no in-app purchases — buy once, everything unlocked forever.
 - Progress + sticker scene saved on-device via a tiny platform channel.
 - Audio: SoundPool (effects), MediaPlayer (music), TextToSpeech (voice) — all in MainActivity.
 - R8/shrinking disabled in release (lesson K3).
-- Version `1.1.0+2` — bump `version:` in `pubspec.yaml` for every re-upload (rule J12).
+- Version `2.0.0+6` — bump `version:` in `pubspec.yaml` for every re-upload (rule J12).
 - Regenerate audio anytime: `python3 tools/make_sounds.py`; icons: `python3 tools/make_icons.py`.

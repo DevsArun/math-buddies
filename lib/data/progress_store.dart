@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-/// On-device progress (stars, stickers, play time, sticker scene, settings).
-/// Saved as a tiny JSON file through a minimal platform channel — zero
-/// plugins, zero permissions (rule J11). If the channel is unavailable the
-/// app still works with in-memory progress.
+/// On-device progress (stars, bonus stars, daily chest, buddy color,
+/// stickers, play time, sticker scene, settings). Saved as a tiny JSON file
+/// through a minimal platform channel — zero plugins, zero permissions
+/// (rule J11). Falls back to in-memory progress if the channel is missing.
 class ProgressStore {
   ProgressStore._();
   static final ProgressStore instance = ProgressStore._();
@@ -19,6 +19,15 @@ class ProgressStore {
   /// Sticker scene: stickerId -> [xFraction, yFraction] on the canvas.
   final Map<String, List<double>> scene = <String, List<double>>{};
 
+  /// Bonus stars from the daily treasure chest.
+  int bonusStars = 0;
+
+  /// Last day the chest was opened ('yyyy-MM-dd'), '' = never.
+  String lastChest = '';
+
+  /// Buddy accent color index: 0 purple, 1 orange, 2 teal.
+  int buddyColor = 0;
+
   /// 'little' (ages 3-4), 'big' (ages 5-6), or null when not chosen yet.
   String? ageGroup;
   bool musicOn = true;
@@ -27,6 +36,13 @@ class ProgressStore {
   Future<void>? _loadFuture;
 
   Future<void> load() => _loadFuture ??= _loadInternal();
+
+  static String todayKey() {
+    final DateTime now = DateTime.now();
+    final String m = now.month.toString().padLeft(2, '0');
+    final String d = now.day.toString().padLeft(2, '0');
+    return '${now.year}-$m-$d';
+  }
 
   Future<void> _loadInternal() async {
     try {
@@ -50,6 +66,12 @@ class ProgressStore {
               }
             });
           }
+          final Object? b = data['bonusStars'];
+          if (b is int) bonusStars = b;
+          final Object? lc = data['lastChest'];
+          if (lc is String) lastChest = lc;
+          final Object? bc = data['buddyColor'];
+          if (bc is int && bc >= 0 && bc <= 2) buddyColor = bc;
           final Object? settings = data['settings'];
           if (settings is Map) {
             final Object? age = settings['age'];
@@ -83,6 +105,9 @@ class ProgressStore {
           'stickers': stickers.toList(),
           'playSeconds': playSeconds,
           'scene': scene,
+          'bonusStars': bonusStars,
+          'lastChest': lastChest,
+          'buddyColor': buddyColor,
           'settings': <String, Object?>{
             'age': ageGroup,
             'music': musicOn,
@@ -98,10 +123,29 @@ class ProgressStore {
   // ---- stars ----
   int starsFor(String gameId) => stars[gameId] ?? 0;
 
-  int get totalStars => stars.values.fold(0, (int a, int b) => a + b);
+  int get totalStars =>
+      stars.values.fold(0, (int a, int b) => a + b) + bonusStars;
 
   void addStar(String gameId) {
     stars[gameId] = starsFor(gameId) + 1;
+    save();
+  }
+
+  // ---- daily chest ----
+  bool get chestAvailable => lastChest != todayKey();
+
+  /// Opens today's chest; returns stars won (0 if already opened today).
+  int openChest() {
+    if (!chestAvailable) return 0;
+    bonusStars += 5;
+    lastChest = todayKey();
+    save();
+    return 5;
+  }
+
+  // ---- buddy color ----
+  void setBuddyColor(int index) {
+    buddyColor = index.clamp(0, 2);
     save();
   }
 
@@ -153,6 +197,8 @@ class ProgressStore {
     stickers.clear();
     playSeconds.clear();
     scene.clear();
+    bonusStars = 0;
+    lastChest = '';
     await save();
   }
 }

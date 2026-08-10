@@ -1,6 +1,26 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'progress_store.dart';
+
+/// What Buddy is saying right now (shown in his speech bubble).
+class BuddyVoice {
+  BuddyVoice._();
+
+  static final ValueNotifier<String> text = ValueNotifier<String>('');
+  static Timer? _clearTimer;
+
+  static void show(String message) {
+    if (message.isEmpty) return;
+    text.value = message;
+    _clearTimer?.cancel();
+    _clearTimer = Timer(const Duration(milliseconds: 2800), () {
+      text.value = '';
+    });
+  }
+}
 
 /// Sound effects, background music and Buddy's voice — all through one tiny
 /// platform channel. Every call is fire-and-forget and fails silently so the
@@ -11,7 +31,7 @@ class MediaService {
   static const MethodChannel _channel = MethodChannel('mathbuddies/media');
 
   /// Play a sound effect (pop, click, sparkle, correct, wrong, star, win,
-  /// jump, place, whoosh). Respects the grown-ups sound toggle.
+  /// jump, place, whoosh, flip, chest). Respects the grown-ups sound toggle.
   static Future<void> play(String name) async {
     if (!ProgressStore.instance.soundOn) return;
     try {
@@ -20,9 +40,11 @@ class MediaService {
     } catch (_) {}
   }
 
-  /// Buddy speaks. Respects the grown-ups sound toggle.
+  /// Buddy speaks (device TTS) AND shows the line in his speech bubble.
   static Future<void> say(String text) async {
-    if (!ProgressStore.instance.soundOn || text.isEmpty) return;
+    if (text.isEmpty) return;
+    BuddyVoice.show(text);
+    if (!ProgressStore.instance.soundOn) return;
     try {
       await _channel
           .invokeMethod<void>('speak', <String, String>{'text': text});

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/media.dart';
 import '../data/progress_store.dart';
+import 'buddy.dart';
 import 'home_screen.dart';
 import 'theme.dart';
 import 'widgets/game_widgets.dart';
@@ -129,6 +130,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 16),
                     _card(
+                      title: '🎨 Buddy color',
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: List<Widget>.generate(3, (int i) {
+                            final bool active = store.buddyColor == i;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 14),
+                              child: Pressable(
+                                onTap: () {
+                                  setState(() => store.setBuddyColor(i));
+                                  MediaService.play('click');
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: active
+                                          ? AppColors.buddyAccents[i]
+                                          : const Color(0xFFDDD6FE),
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: Buddy(
+                                    size: 48,
+                                    accent: AppColors.buddyAccents[i],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _card(
                       title: '🧒 Age group',
                       child: Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -243,7 +281,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 16),
                     const Center(
                       child: Text(
-                        'Math Buddies v1.1.3',
+                        'Math Buddies v2.0.0',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.softGrey,

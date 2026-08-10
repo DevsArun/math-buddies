@@ -17,6 +17,15 @@ class AppColors {
     <Color>[Color(0xFFA18CD1), Color(0xFFFBC2EB)], // Shapes
     <Color>[Color(0xFFFAD961), Color(0xFFF76B1C)], // Patterns
     <Color>[Color(0xFF43E97B), Color(0xFF38B2F9)], // Compare
+    <Color>[Color(0xFF89F7FE), Color(0xFF66A6FF)], // Bubble Pop
+    <Color>[Color(0xFFF093FB), Color(0xFFF5576C)], // Memory Match
+  ];
+
+  /// Buddy accent color choices (window tint).
+  static const List<Color> buddyAccents = <Color>[
+    Color(0xFF5B54E8), // classic purple
+    Color(0xFFFF8A3D), // sunset orange
+    Color(0xFF12B5A5), // ocean teal
   ];
 }
 

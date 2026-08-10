@@ -30,7 +30,7 @@ class StickerDef {
   const StickerDef(this.id, this.emoji);
 }
 
-/// 24 collectible stickers — 4 per game world.
+/// 32 collectible stickers — 4 per game world.
 const List<StickerDef> kStickers = <StickerDef>[
   // Farm World (counting)
   StickerDef('counting_1', '🐮'),
@@ -62,6 +62,16 @@ const List<StickerDef> kStickers = <StickerDef>[
   StickerDef('compare_2', '🐘'),
   StickerDef('compare_3', '🦒'),
   StickerDef('compare_4', '🐋'),
+  // Bubble Sky (bubble pop)
+  StickerDef('bubbles_1', '🫧'),
+  StickerDef('bubbles_2', '🎈'),
+  StickerDef('bubbles_3', '☁️'),
+  StickerDef('bubbles_4', '🦄'),
+  // Memory Meadow (memory match)
+  StickerDef('memory_1', '🃏'),
+  StickerDef('memory_2', '🧠'),
+  StickerDef('memory_3', '🍀'),
+  StickerDef('memory_4', '🦊'),
 ];
 
 String stickerEmoji(String id) {
@@ -88,5 +98,52 @@ void awardRoundRewards(
   if (completedRounds >= totalRounds) {
     store.addSticker('${gameId}_3');
     if (mistakes == 0) store.addSticker('${gameId}_4');
+  }
+}
+
+// ---------------- trophies ----------------
+
+class TrophyDef {
+  final String id;
+  final String emoji;
+  final String title;
+  final String how;
+  const TrophyDef(this.id, this.emoji, this.title, this.how);
+}
+
+const List<TrophyDef> kTrophies = <TrophyDef>[
+  TrophyDef('first_star', '🌟', 'First Star', 'Earn your first star'),
+  TrophyDef('collector', '⭐', 'Star Collector', 'Collect 25 stars'),
+  TrophyDef('champion', '🏆', 'Star Champion', 'Collect 50 stars'),
+  TrophyDef('rocket', '🚀', 'Rocket Master', 'Collect 100 stars'),
+  TrophyDef('explorer', '🎮', 'World Explorer', 'Play all 8 worlds'),
+  TrophyDef('perfect', '💯', 'Perfectionist', 'Finish any world with zero mistakes'),
+  TrophyDef('mathwhiz', '🧮', 'Math Whiz', 'Earn 12 stars in Add & Take Away'),
+  TrophyDef('decorator', '🎨', 'Decorator', 'Place 3 stickers in My Space Scene'),
+];
+
+bool trophyEarned(String id, ProgressStore s) {
+  switch (id) {
+    case 'first_star':
+      return s.totalStars >= 1;
+    case 'collector':
+      return s.totalStars >= 25;
+    case 'champion':
+      return s.totalStars >= 50;
+    case 'rocket':
+      return s.totalStars >= 100;
+    case 'explorer':
+      return <String>[
+        'counting', 'tracing', 'jodtod', 'shapes',
+        'patterns', 'compare', 'bubbles', 'memory',
+      ].every((String g) => s.starsFor(g) > 0);
+    case 'perfect':
+      return s.stickers.any((String st) => st.endsWith('_4'));
+    case 'mathwhiz':
+      return s.starsFor('jodtod') >= 12;
+    case 'decorator':
+      return s.scene.length >= 3;
+    default:
+      return false;
   }
 }

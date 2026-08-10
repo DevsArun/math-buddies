@@ -18,7 +18,6 @@ class TracingGame extends StatefulWidget {
 }
 
 class _TracingGameState extends State<TracingGame> {
-  static const int _rounds = 10; // numbers 0..9
   static const List<Color> _strokeColors = <Color>[
     Color(0xFFFF6A88),
     Color(0xFF4CC9F0),
@@ -26,8 +25,13 @@ class _TracingGameState extends State<TracingGame> {
     Color(0xFF43E97B),
     Color(0xFFF76B1C),
   ];
+  static const List<String> _words = <String>[
+    'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE',
+    'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN',
+  ];
 
   final Stopwatch _playTime = Stopwatch()..start();
+  late final List<String> _pages;
 
   int _index = 0;
   int _mistakes = 0;
@@ -38,12 +42,17 @@ class _TracingGameState extends State<TracingGame> {
   bool _showHint = false;
   BuddyMood _mood = BuddyMood.idle;
 
+  bool get _isLittle => ProgressStore.instance.ageGroup != 'big';
+  int get _rounds => _pages.length;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      MediaService.say('Trace the number ${kNumberWords[_index]}');
-    });
+    final List<String> numbers =
+        List<String>.generate(10, (int i) => '$i');
+    // Big explorers also trace the number words (double the content).
+    _pages = _isLittle ? numbers : <String>[...numbers, ..._words];
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sayPage());
   }
 
   @override
@@ -51,6 +60,19 @@ class _TracingGameState extends State<TracingGame> {
     _playTime.stop();
     ProgressStore.instance.addPlayTime('tracing', _playTime.elapsed.inSeconds);
     super.dispose();
+  }
+
+  String get _page => _pages[_index];
+
+  String get _wordLabel =>
+      _page.length == 1 ? kNumberWords[int.parse(_page)].toUpperCase() : _page;
+
+  void _sayPage() {
+    if (_page.length == 1) {
+      MediaService.say('Trace the number ${kNumberWords[int.parse(_page)]}');
+    } else {
+      MediaService.say('Trace the word $_page');
+    }
   }
 
   int get _pointCount =>
@@ -85,10 +107,11 @@ class _TracingGameState extends State<TracingGame> {
 
   Future<void> _finish() async {
     if (_celebrate) return;
-    if (_pointCount < 25) {
+    final int minPoints = _page.length == 1 ? 25 : 60;
+    if (_pointCount < minPoints) {
       _mistakes++;
       MediaService.play('wrong');
-      MediaService.say('Trace the grey number first!');
+      MediaService.say('Trace the grey shape first!');
       setState(() {
         _showHint = true;
         _mood = BuddyMood.encourage;
@@ -99,7 +122,7 @@ class _TracingGameState extends State<TracingGame> {
     }
     HapticFeedback.mediumImpact();
     MediaService.play('correct');
-    MediaService.say('Beautiful ${kNumberWords[_index]}!');
+    MediaService.say('Beautiful! $_wordLabel!');
     setState(() {
       _celebrate = true;
       _mood = BuddyMood.celebrate;
@@ -117,7 +140,7 @@ class _TracingGameState extends State<TracingGame> {
         _celebrate = false;
         _mood = BuddyMood.idle;
       });
-      MediaService.say('Trace the number ${kNumberWords[_index]}');
+      _sayPage();
     }
   }
 
@@ -150,7 +173,7 @@ class _TracingGameState extends State<TracingGame> {
                           mood: _mood,
                         ),
                         Text(
-                          kNumberWords[_index].toUpperCase(),
+                          _wordLabel,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
@@ -164,7 +187,7 @@ class _TracingGameState extends State<TracingGame> {
                           const Padding(
                             padding: EdgeInsets.only(bottom: 8),
                             child: Text(
-                              'Trace the grey number first 🙂',
+                              'Trace the grey shape first 🙂',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -206,7 +229,7 @@ class _TracingGameState extends State<TracingGame> {
             onPanUpdate: (DragUpdateDetails d) => _extendStroke(d.localPosition),
             child: CustomPaint(
               painter: _TracePainter(
-                number: '$_index',
+                label: _page,
                 strokes: _strokes,
                 colors: _strokeColors,
               ),
@@ -246,24 +269,26 @@ class _TracingGameState extends State<TracingGame> {
 }
 
 class _TracePainter extends CustomPainter {
-  final String number;
+  final String label;
   final List<List<Offset>> strokes;
   final List<Color> colors;
 
   _TracePainter({
-    required this.number,
+    required this.label,
     required this.strokes,
     required this.colors,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final bool singleDigit = label.length == 1;
     final TextPainter tp = TextPainter(
       text: TextSpan(
-        text: number,
+        text: label,
         style: TextStyle(
-          fontSize: size.height * 0.72,
+          fontSize: singleDigit ? size.height * 0.72 : size.height * 0.22,
           fontWeight: FontWeight.w900,
+          letterSpacing: singleDigit ? 0 : 8,
           color: const Color(0xFF3B3663).withValues(alpha: 0.14),
         ),
       ),

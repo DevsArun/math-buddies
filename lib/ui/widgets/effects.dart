@@ -2,6 +2,56 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+/// Slowly shifting pastel background — the "next level" studio feel.
+class AnimatedGradientBg extends StatefulWidget {
+  final Widget child;
+
+  const AnimatedGradientBg({super.key, required this.child});
+
+  @override
+  State<AnimatedGradientBg> createState() => _AnimatedGradientBgState();
+}
+
+class _AnimatedGradientBgState extends State<AnimatedGradientBg>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 7),
+  )..repeat(reverse: true);
+
+  static const List<Color> _a = <Color>[Color(0xFFFFF6E9), Color(0xFFEAF3FF)];
+  static const List<Color> _b = <Color>[Color(0xFFFFE9F3), Color(0xFFE6FAF3)];
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (BuildContext context, Widget? child) {
+        final double t = Curves.easeInOut.transform(_c.value);
+        final Color top = Color.lerp(_a[0], _b[0], t) ?? _a[0];
+        final Color bottom = Color.lerp(_a[1], _b[1], t) ?? _a[1];
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[top, bottom],
+            ),
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
 /// Gentle confetti burst overlay (no assets, no plugins).
 class ConfettiBurst extends StatefulWidget {
   final int count;
@@ -109,7 +159,7 @@ class _ConfettiPainter extends CustomPainter {
   bool shouldRepaint(_ConfettiPainter oldDelegate) => oldDelegate.t != t;
 }
 
-/// Small floating stars that drift up behind content on the home screen.
+/// Small floating stars that drift up behind content.
 class FloatingStars extends StatefulWidget {
   const FloatingStars({super.key});
 

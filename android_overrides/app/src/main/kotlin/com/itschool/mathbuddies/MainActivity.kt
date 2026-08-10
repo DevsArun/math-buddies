@@ -21,7 +21,7 @@ class MainActivity : FlutterActivity() {
 
     private val soundNames = listOf(
         "pop", "click", "sparkle", "correct", "wrong",
-        "star", "win", "jump", "place", "whoosh"
+        "star", "win", "jump", "place", "whoosh", "flip", "chest"
     )
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
