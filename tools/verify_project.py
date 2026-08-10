@@ -109,6 +109,19 @@ def check_const_indexing(path):
         print("OK const-index:", path)
 
 
+def check_test_pumps(path):
+    """Regression guard (CI failure 1.1.1): tests must never use
+    pumpAndSettle - Buddy/FloatingStars animations repeat forever, so the
+    pump never settles and the test times out. Use fixed pump() calls."""
+    full = os.path.join(ROOT, path)
+    with open(full, "r", encoding="utf-8") as f:
+        text = f.read()
+    if "pumpAndSettle(" in text:
+        fail(f"{path}: pumpAndSettle used - repeating animations never settle")
+    else:
+        print("OK pumps:", path)
+
+
 def check_xml(path):
     full = os.path.join(ROOT, path)
     try:
@@ -138,6 +151,8 @@ def main():
                 check_balance(rel)
             if fn.endswith(".dart"):
                 check_const_indexing(rel)
+                if rel.startswith("test"):
+                    check_test_pumps(rel)
             if fn.endswith(".xml"):
                 check_xml(rel)
 
